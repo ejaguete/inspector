@@ -45,7 +45,6 @@ public class Inspector {
 		 * if recurse = false, find info for object specified
 		 * if recurse = true, fully inspect each field that is an object (recurse into object)
 		 * 
-		 *
 		 */
 		
 		
