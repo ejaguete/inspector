@@ -1,14 +1,11 @@
-/**
- * 
- */
-package inspector;
 
-/**
- * @author ericajoy.aguete
- *
- */
+import static java.lang.System.out;
+import java.lang.reflect.*;
+
 public class Inspector {
 	
+	public Inspector() {}
+
 	public void inspect(Object o, boolean recurse) {
 		/*
 		 * TODO:
@@ -38,6 +35,35 @@ public class Inspector {
 		 *  	- print out name, component type, length, contents
 		 *  	
 		 */
+		
+		out.println("\nSUMMARY: \n");
+		String format = "%-20s %-20s %n";
+		
+		//find name of declaring class
+		Class c = o.getClass();
+		out.printf(format, "DECLARING CLASS", c.getName() + "\n");
+		
+		//find superclass
+		out.printf(format, "SUPERCLASS", c.getSuperclass().getName() + "\n");
+		
+		//find interfaces
+		Class[] interfaces = c.getInterfaces();
+		if(interfaces.length!=0) {
+			for (int i=0;i<interfaces.length;++i)
+				out.printf(format, "INTERFACE", interfaces[i]);
+			out.println();
+		} else 
+			out.printf(format, "INTERFACE", "none\n");
+		
+		//find methods
+		Method[] methods = c.getDeclaredMethods();
+		if(methods.length!=0) {
+			//method name
+			for(int i=0;i<methods.length;++i) {
+				out.printf(format, "METHOD", methods[i]);
+			}
+		} else
+			out.printf(format, "METHOD", "none");
 		
 		/* 
 		 * TODO:
