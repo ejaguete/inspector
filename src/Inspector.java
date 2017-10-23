@@ -11,10 +11,9 @@ public class Inspector {
 		if(list.length!=0) {
 			for (int i=0;i<list.length;++i)
 				out.printf(format, header, list[i]);
-			out.println();
 		} else
 			out.printf(format, header, "none");
-		
+		out.println();	
 	}
 
 	public void inspect(Object o, boolean recurse) {
@@ -47,11 +46,11 @@ public class Inspector {
 		 *  	
 		 */
 		
-		out.println("\nSUMMARY: \n");
+		out.println("\nSUMMARY:\n--------");
 		
 		//find name of declaring class
 		Class c = o.getClass();
-		out.printf(format, "DECLARING CLASS", c.getName() + "\n");
+		out.printf(format, "CLASS", c.getName() + "\n");
 		
 		//find superclass
 		out.printf(format, "SUPERCLASS", c.getSuperclass().getName() + "\n");
@@ -67,6 +66,35 @@ public class Inspector {
 		
 		//find constructor
 		Constructor[] constructors = c.getConstructors();
+		printList(constructors, "CONSTRUCTOR");
+		
+		//find fields
+
+		Field[] fields = c.getDeclaredFields();		
+		for (int i=0; i<fields.length;++i) {
+			//get field name
+			String info = fields[i] + " = ";
+			// read field
+			fields[i].setAccessible(true);
+
+			try {
+				Object value = fields[i].get(o);
+				
+				if(!fields[i].getType().isPrimitive()) {
+					info += value + " / hashcode=" + System.identityHashCode(value);
+				}
+				else if(fields[i].getType().isArray()) {
+					
+				}
+				else if(value!=null)
+					info += value;
+				else
+					info += "null";
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+			out.printf(format, "FIELD", info);
+		}
 		
 		/* 
 		 * TODO:
