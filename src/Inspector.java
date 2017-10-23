@@ -10,38 +10,57 @@ public class Inspector {
 	public Inspector() {}
 	
 	private void printList(Object[] list, String header) {
-		if(list.length!=0) {
-			for (Object item : list)
-				out.printf(format, header, item);
-		} else
+		if(list.length==0)
 			out.printf(format, header, "none");
+		
+		for (Object item : list)
+			out.printf(format, header, item);		
 		out.println();	
 	}
 	
 	private void printInfo(Class c) {
-		out.printf(format, "CLASS", c.getName() + "\n");
-		
+		//find name of declaring class
+		out.printf(format, "CLASS", c.getName());
+		out.println();
 		//find superclass
 		Class sup = c.getSuperclass();
-		out.printf(format, "SUPERCLASS", sup.getName() + "\n");
-		inspectHierarchy(sup, rec, o);
+		if(sup==null)
+			out.printf(format, "SUPERCLASS", "none");
+		else {
+			out.printf(format, "SUPERCLASS", sup.getName());
+			out.println("\n--------\nSUPERCLASS SUMMARY:\n--------\n");
+			printInfo(sup);
+			out.println("--------\nEND SUPERCLASS SUMMARY\n--------");
+		}
+		out.println();
 		
 		//find interfaces
 		Class[] interfaces = c.getInterfaces();
-		printList(interfaces, "INTERFACE");
-		
+		if(interfaces.length==0)
+			out.printf(format,"INTERFACE", "none\n");
+		else {
+			for (Class face : interfaces) {
+				out.printf(format, "INTERFACE", face);
+				out.println("\n--------\nINTERFACE SUMMARY:\n--------\n");
+				printInfo(face);
+				out.println("\n--------\nEND INTERFACE SUMMARY\n--------\n");
+			}
+		}
+
 		//find methods
 		Method[] methods = c.getDeclaredMethods();
 		printList(methods, "METHOD");
-		
-		
+
+
 		//find constructor
 		Constructor[] constructors = c.getConstructors();
 		printList(constructors, "CONSTRUCTOR");
-		
-		//find fields
 
-		Field[] fields = c.getDeclaredFields();		
+		//find fields
+		Field[] fields = c.getDeclaredFields();
+		if(fields.length==0) 
+			out.printf(format, "FIELD", "none");
+	
 		for (int i=0; i<fields.length;++i) {
 			//get field name
 			String info = fields[i] + " = ";
@@ -50,20 +69,22 @@ public class Inspector {
 
 			try {
 				Object value = fields[i].get(o);
-				
+
 				if(!fields[i].getType().isPrimitive()) 
 					info += value + " / hashcode=" + System.identityHashCode(value);
-				
+
 				else if(value!=null)
 					info += value;
-				
+
 				else
 					info += "null";
-				out.printf(format, "FIELD", info);
 				
+				out.printf(format, "FIELD", info);
+
 				if(fields[i].getType().isArray()) {
-					out.println("--------\nARRAY SUMMARY:\n--------\n");
+					out.println("\n--------\nARRAY SUMMARY:\n--------\n");
 					
+					out.printf(format, "ARRAY NAME", fields[i].getName());
 					int len = Array.getLength(value);
 					out.printf(format, "ARRAY TYPE", fields[i].getType().getComponentType());
 					if(!fields[i].getType().getComponentType().toString().contains("java.io")) {
@@ -73,42 +94,25 @@ public class Inspector {
 						}
 						contents += Array.get(value, len-1);
 						out.printf(format, "ARRAY CONTENTS", contents);
+						out.println();
 						out.println("--------\nEND ARRAY SUMMARY\n--------\n");
 					} else {
 						out.printf(format, "ARRAY CONTENTS", "Cannot display contents of array.");
+						out.println();
+						out.println("--------\nEND ARRAY SUMMARY\n--------\n");
 					}
 				} 
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				e.printStackTrace();
 			}
 		}
-	}
-	
-	private void inspectHierarchy(Class c, boolean recurse, Object o) {
-		if(!c.getName().equals("java.lang.Object") && 
-				!Modifier.isAbstract(c.getModifiers())) {		
-		
-			try {
-				Constructor superCons = c.getConstructor(null);
-				try {
-					Object superObj = superCons.newInstance(null);
-					inspect(superObj, recurse);
-				} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-						| InvocationTargetException e1) {
-					e1.printStackTrace();
-				}
-			} catch (NoSuchMethodException | SecurityException e) {
-				e.printStackTrace();
-			}	
-		} else {
-			out.println("--------\nSUPERCLASS SUMMARY:\n--------\n");
-			printInfo(c);
-			out.println("--------\nEND SUPERCLASS SUMMARY\n--------\n");
-		}
-		
+		out.println();
 	}
 
-	public void inspect(Object object, boolean recurse) {
+	public void inspect(Object obj, boolean recurse) {
+		this.o = obj;
+		rec = recurse;
+		
 		/*
 		 * TODO:
 		 * find the following info about the object:
@@ -138,11 +142,8 @@ public class Inspector {
 		 *  	
 		 */
 		
-		this.o = object;
-		this.rec = recurse;
 		out.println("--------\nSUMMARY:\n--------\n");
-		printInfo(o.getClass());
-		
+		printInfo(o.getClass());	
 	}
-}
 
+}
