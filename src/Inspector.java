@@ -3,8 +3,19 @@ import static java.lang.System.out;
 import java.lang.reflect.*;
 
 public class Inspector {
+	private String format = "%-20s %-20s %n";
 	
 	public Inspector() {}
+	
+	private void printList(Object[] list, String header) {
+		if(list.length!=0) {
+			for (int i=0;i<list.length;++i)
+				out.printf(format, header, list[i]);
+			out.println();
+		} else
+			out.printf(format, header, "none");
+		
+	}
 
 	public void inspect(Object o, boolean recurse) {
 		/*
@@ -37,7 +48,6 @@ public class Inspector {
 		 */
 		
 		out.println("\nSUMMARY: \n");
-		String format = "%-20s %-20s %n";
 		
 		//find name of declaring class
 		Class c = o.getClass();
@@ -48,22 +58,15 @@ public class Inspector {
 		
 		//find interfaces
 		Class[] interfaces = c.getInterfaces();
-		if(interfaces.length!=0) {
-			for (int i=0;i<interfaces.length;++i)
-				out.printf(format, "INTERFACE", interfaces[i]);
-			out.println();
-		} else 
-			out.printf(format, "INTERFACE", "none\n");
+		printList(interfaces, "INTERFACE");
 		
 		//find methods
 		Method[] methods = c.getDeclaredMethods();
-		if(methods.length!=0) {
-			//method name
-			for(int i=0;i<methods.length;++i) {
-				out.printf(format, "METHOD", methods[i]);
-			}
-		} else
-			out.printf(format, "METHOD", "none");
+		printList(methods, "METHOD");
+		
+		
+		//find constructor
+		Constructor[] constructors = c.getConstructors();
 		
 		/* 
 		 * TODO:
