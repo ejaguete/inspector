@@ -18,11 +18,61 @@ public class Inspector {
 		out.println();	
 	}
 	
+	private String returnArray(Object obj) {
+
+		int len = Array.getLength(obj);
+		String contents = "\n";
+		if(len!=0) {	
+			for(int j=0; j<len;++j) {
+				Object item = Array.get(obj, j);
+				if(item!=null) {
+					if(item.getClass().isArray()) {
+						contents += returnArray(item) + "\n";
+					} else
+						contents += item + "/ ";
+				} else {
+					contents += "null/ ";
+				}
+			}
+		}
+		return contents;
+	}
+	
+	private void printArray(Field f, Object value) {
+		
+		out.printf(format, "ARRAY NAME", f.getName());
+		int len = Array.getLength(value);
+		out.printf(format, "ARRAY LENGTH", len);
+		out.printf(format, "COMPONENT TYPE", value.getClass().getComponentType());
+		if(len!=0) {
+			out.printf(format, "ARRAY CONTENTS", returnArray(value));
+			/*
+			String contents = "";
+			for(int j=0; j<len;++j) {
+				Object item = Array.get(value, j);
+				if(item!=null) {
+					if(item.getClass().isArray()) {
+						contents += returnArray(item) + "\n";
+					} else
+						contents += item + "/ ";
+				} else {
+					contents += "null/ ";
+				}
+			}
+			out.printf(format, "ARRAY CONTENTS", contents);
+			*/
+			out.println();
+		} else {
+			out.printf(format, "ARRAY CONTENTS", "Array is empty.");
+			out.println();		
+		}
+	}
+	
 	private void printInfo(Class c) {
-		//find name of declaring class
+		
 		out.printf(format, "CLASS", c.getName());
 		out.println();
-		//find superclass
+		
 		Class sup = c.getSuperclass();
 		if(sup==null)
 			out.printf(format, "SUPERCLASS", "none");
@@ -30,11 +80,10 @@ public class Inspector {
 			out.printf(format, "SUPERCLASS", sup.getName());
 			out.println("\n--------\nSUPERCLASS SUMMARY:\n--------\n");
 			printInfo(sup);
-			out.println("--------\nEND SUPERCLASS SUMMARY\n--------");
+			out.println("\n--------\nEND SUPERCLASS SUMMARY: " + sup.getName() + "\n--------");
 		}
 		out.println();
 		
-		//find interfaces
 		Class[] interfaces = c.getInterfaces();
 		if(interfaces.length==0)
 			out.printf(format,"INTERFACE", "none\n");
@@ -43,107 +92,64 @@ public class Inspector {
 				out.printf(format, "INTERFACE", face);
 				out.println("\n--------\nINTERFACE SUMMARY:\n--------\n");
 				printInfo(face);
-				out.println("\n--------\nEND INTERFACE SUMMARY\n--------\n");
+				out.println("\n--------\nEND INTERFACE SUMMARY: " + face.getName() + "\n--------\n");
 			}
 		}
 
-		//find methods
 		Method[] methods = c.getDeclaredMethods();
 		printList(methods, "METHOD");
 
-
-		//find constructor
 		Constructor[] constructors = c.getConstructors();
 		printList(constructors, "CONSTRUCTOR");
 
-		//find fields
 		Field[] fields = c.getDeclaredFields();
 		if(fields.length==0) 
 			out.printf(format, "FIELD", "none");
 	
-		for (int i=0; i<fields.length;++i) {
-			//get field name
-			String info = fields[i] + " = ";
-			// read field
-			fields[i].setAccessible(true);
+		for (Field f : fields) {
+			String info = f + " = ";
+			f.setAccessible(true);
 
 			try {
-				Object value = fields[i].get(o);
+				Object value = f.get(o);
 
-				if(!fields[i].getType().isPrimitive()) 
+				if(!f.getType().isPrimitive()) 
 					info += value + " / hashcode=" + System.identityHashCode(value);
-
 				else if(value!=null)
 					info += value;
-
 				else
 					info += "null";
 				
 				out.printf(format, "FIELD", info);
-
-				if(fields[i].getType().isArray()) {
-					out.println("\n--------\nARRAY SUMMARY:\n--------\n");
-					
-					out.printf(format, "ARRAY NAME", fields[i].getName());
-					int len = Array.getLength(value);
-					out.printf(format, "ARRAY TYPE", fields[i].getType().getComponentType());
-					if(!fields[i].getType().getComponentType().toString().contains("java.io")) {
-						String contents = "";
-						for(int j=0; j<len-1;++j) {
-							contents += Array.get(value, j) + ", ";
-						}
-						contents += Array.get(value, len-1);
-						out.printf(format, "ARRAY CONTENTS", contents);
-						out.println();
-						out.println("--------\nEND ARRAY SUMMARY\n--------\n");
-					} else {
-						out.printf(format, "ARRAY CONTENTS", "Cannot display contents of array.");
-						out.println();
-						out.println("--------\nEND ARRAY SUMMARY\n--------\n");
-					}
+				out.println();
+				
+				if(f.getType().isArray()) {
+					out.println("--------\nARRAY SUMMARY:\n--------\n");
+					printArray(f, value);
+					out.println("--------\nEND ARRAY SUMMARY: " + f.getName() + "\n--------\n");
 				} 
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				e.printStackTrace();
 			}
 		}
-		out.println();
 	}
 
 	public void inspect(Object obj, boolean recurse) {
 		this.o = obj;
 		rec = recurse;
-		
-		/*
-		 * TODO:
-		 * find the following info about the object:
-		 * - name of declaring class
-		 * - name of immediate superclass
-		 * - name of interfaces class implements
-		 * - methods class declares
-		 * 		- include:
-		 * 		- exceptions thrown
-		 * 		- parameter types
-		 * 		- return type
-		 * 		- modifiers
-		 * - constructors class declares
-		 * 		- include:
-		 * 		- parameter types
-		 * 		- modifiers
-		 * - fields class declares
-		 *  	- include:
-		 *  	- type
-		 *  	- modifiers
-		 *  	- current value of each field
-		 *  		* if field is an object reference and recursive is set to false, print "reference value" directly
-		 *  		(ref value = name of object's class, object's identity hash code)
-		 * - traverse inheritance hierarchy to find all methods, constructors, fields and field values that each superclass/superinterface declares
-		 *  	- must handle arrays you might encounter
-		 *  	- print out name, component type, length, contents
-		 *  	
-		 */
-		
 		out.println("--------\nSUMMARY:\n--------\n");
-		printInfo(o.getClass());	
+		Class c = obj.getClass();
+		if(c.isArray()) {		
+			out.printf(format, "ARRAY NAME", c.getName());
+			int len = Array.getLength(obj);
+			out.printf(format, "ARRAY LENGTH", len);
+			out.printf(format, "ARRAY TYPE", c.getComponentType());
+			out.printf(format, "ARRAY CONTENTS", returnArray(o));
+		}
+
+		else
+			printInfo(c);
+		out.println("--------\nEND SUMMARY: " + o.getClass().getName() + "\n--------\n");
 	}
 
 }
