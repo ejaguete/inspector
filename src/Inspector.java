@@ -1,8 +1,10 @@
 
 import static java.lang.System.out;
 import java.lang.reflect.*;
+import java.util.IdentityHashMap;
 
 public class Inspector {
+	public static IdentityHashMap<Integer, Object> map = new IdentityHashMap<Integer, Object>();
 	private String format = "%-20s %-30s %n";
 	Object o;
 	boolean rec;
@@ -29,8 +31,11 @@ public class Inspector {
 			try {
 				Object value = f.get(o);
 
-				if(!f.getType().isPrimitive()) 
-					info += value + " / hashcode=" + System.identityHashCode(value);
+				if(!f.getType().isPrimitive()) {
+					if (rec)
+						inspect(value,rec);
+				}
+					
 				else if(value!=null)
 					info += value;
 				else
@@ -61,6 +66,9 @@ public class Inspector {
 				if(item!=null) {
 					if(item.getClass().isArray()) {
 						contents += returnArray(item) + "\n";
+						if(rec) {
+							inspect(item, rec);
+						}
 					} else
 						contents += item + "/ ";
 				} else {
@@ -86,9 +94,9 @@ public class Inspector {
 			out.println();		
 		}
 	}
-	
-private void printArray(Object value) {
-		
+
+	private void printArray(Object value) {
+
 		out.printf(format, "ARRAY NAME", value.getClass().getName());
 		int len = Array.getLength(value);
 		out.printf(format, "ARRAY LENGTH", len);
@@ -144,13 +152,19 @@ private void printArray(Object value) {
 	public void inspect(Object obj, boolean recurse) {
 		this.o = obj;
 		rec = recurse;
-		out.println("--------\nSUMMARY:\n--------\n");
-		Class c = obj.getClass();
-		if(c.isArray()) {		
-			printArray(o);
-		} else
-			printInfo(c);
-		out.println("--------\nEND SUMMARY: " + o.getClass().getName() + "\n--------\n");
+		int hc = System.identityHashCode(o);
+		if(map.get(hc)== null) {
+			map.put(System.identityHashCode(o), o);
+			
+			out.println("--------\nSUMMARY:\n--------\n");
+			Class c = obj.getClass();
+			if(c.isArray()) {		
+				printArray(o);
+			} else
+				printInfo(c);
+			out.println("--------\nEND SUMMARY: " + o.getClass().getName() + "\n--------\n");
+		}
+		
 	}
 
 }
