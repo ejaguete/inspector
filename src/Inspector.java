@@ -18,10 +18,43 @@ public class Inspector {
 		out.println();	
 	}
 	
+	private void printFields(Field[] fields) {
+		if(fields.length==0) 
+			out.printf(format, "FIELD", "none");
+	
+		for (Field f : fields) {
+			String info = f + " = ";
+			f.setAccessible(true);
+
+			try {
+				Object value = f.get(o);
+
+				if(!f.getType().isPrimitive()) 
+					info += value + " / hashcode=" + System.identityHashCode(value);
+				else if(value!=null)
+					info += value;
+				else
+					info += "null";
+				
+				out.printf(format, "FIELD", info);
+				out.println();
+				
+				if(f.getType().isArray()) {
+					out.println("--------\nARRAY SUMMARY:\n--------\n");
+					printArray(f, value);
+					out.println();
+					out.println("--------\nEND ARRAY SUMMARY: " + f.getName() + "\n--------\n");
+				} 
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	private String returnArray(Object obj) {
 
 		int len = Array.getLength(obj);
-		String contents = "\n";
+		String contents = "";
 		if(len!=0) {	
 			for(int j=0; j<len;++j) {
 				Object item = Array.get(obj, j);
@@ -45,22 +78,24 @@ public class Inspector {
 		out.printf(format, "ARRAY LENGTH", len);
 		out.printf(format, "COMPONENT TYPE", value.getClass().getComponentType());
 		if(len!=0) {
-			out.printf(format, "ARRAY CONTENTS", returnArray(value));
-			/*
-			String contents = "";
-			for(int j=0; j<len;++j) {
-				Object item = Array.get(value, j);
-				if(item!=null) {
-					if(item.getClass().isArray()) {
-						contents += returnArray(item) + "\n";
-					} else
-						contents += item + "/ ";
-				} else {
-					contents += "null/ ";
-				}
-			}
-			out.printf(format, "ARRAY CONTENTS", contents);
-			*/
+			out.println("\nARRAY CONTENTS");
+			out.println(returnArray(value));
+			out.println();
+		} else {
+			out.printf(format, "ARRAY CONTENTS", "Array is empty.");
+			out.println();		
+		}
+	}
+	
+private void printArray(Object value) {
+		
+		out.printf(format, "ARRAY NAME", value.getClass().getName());
+		int len = Array.getLength(value);
+		out.printf(format, "ARRAY LENGTH", len);
+		out.printf(format, "COMPONENT TYPE", value.getClass().getComponentType());
+		if(len!=0) {
+			out.println("\nARRAY CONTENTS");
+			out.println(returnArray(value));
 			out.println();
 		} else {
 			out.printf(format, "ARRAY CONTENTS", "Array is empty.");
@@ -103,35 +138,7 @@ public class Inspector {
 		printList(constructors, "CONSTRUCTOR");
 
 		Field[] fields = c.getDeclaredFields();
-		if(fields.length==0) 
-			out.printf(format, "FIELD", "none");
-	
-		for (Field f : fields) {
-			String info = f + " = ";
-			f.setAccessible(true);
-
-			try {
-				Object value = f.get(o);
-
-				if(!f.getType().isPrimitive()) 
-					info += value + " / hashcode=" + System.identityHashCode(value);
-				else if(value!=null)
-					info += value;
-				else
-					info += "null";
-				
-				out.printf(format, "FIELD", info);
-				out.println();
-				
-				if(f.getType().isArray()) {
-					out.println("--------\nARRAY SUMMARY:\n--------\n");
-					printArray(f, value);
-					out.println("--------\nEND ARRAY SUMMARY: " + f.getName() + "\n--------\n");
-				} 
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				e.printStackTrace();
-			}
-		}
+		printFields(fields);
 	}
 
 	public void inspect(Object obj, boolean recurse) {
@@ -140,14 +147,8 @@ public class Inspector {
 		out.println("--------\nSUMMARY:\n--------\n");
 		Class c = obj.getClass();
 		if(c.isArray()) {		
-			out.printf(format, "ARRAY NAME", c.getName());
-			int len = Array.getLength(obj);
-			out.printf(format, "ARRAY LENGTH", len);
-			out.printf(format, "ARRAY TYPE", c.getComponentType());
-			out.printf(format, "ARRAY CONTENTS", returnArray(o));
-		}
-
-		else
+			printArray(o);
+		} else
 			printInfo(c);
 		out.println("--------\nEND SUMMARY: " + o.getClass().getName() + "\n--------\n");
 	}
