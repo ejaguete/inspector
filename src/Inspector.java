@@ -3,7 +3,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 
 public class Inspector {
-	private String format =  "%-" + 12 + "s -> %s %n";
+	private String format =  "%-" + 15 + "s -> %s %n";
 	private final String NONE = "none";
 	
 	public static ArrayList<String> foundSupers = new ArrayList<String>();
@@ -195,17 +195,5 @@ public class Inspector {
 		out.printf(format, "METHOD", m);
 		out.println();
 		
-	}
-
-	
-	private String determineModifier(int m) {
-		String mod = "";
-		if(Modifier.isAbstract(m))
-			mod = "abstract";
-		else if(Modifier.isFinal(m))
-			mod = "final";
-		else if(Modifier.isInterface(m))
-			mod = "interface";
-		return mod;
 	}
 }
