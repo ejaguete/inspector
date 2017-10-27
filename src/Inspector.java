@@ -3,13 +3,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 
 public class Inspector {
-	private String format = "%-20s %-30s %n";
-	private final String CLASS = "CLASS";
-	private final String FIELD = "FIELD";
-	private final String METHOD = "METHOD";
-	private final String CON = "CONSTRUCTOR";
-	private final String SUPER = "SUPERCLASS";
-	private final String INTER = "INTERFACE";
+	private String format =  "%-" + 12 + "s -> %s %n";
 	private final String NONE = "none";
 	
 	public static ArrayList<String> foundSupers = new ArrayList<String>();
@@ -21,67 +15,33 @@ public class Inspector {
 	public void inspect(Object obj, boolean recursion) {
 		this.rec = recursion;
 		
-		out.println("***********************");
-		
-		Class c = obj.getClass();
-		printClass(c, false);
+		if(obj.getClass().isArray()) {
+			inspectArray(null, obj);
+		} else {
+			inspectClass(obj, obj.getClass());
+		}
+	}
 	
-		if(c.getSuperclass()!=null) {
-			printClass(c.getSuperclass(),true);
-			if(!foundSupers.contains(c.getSuperclass().getName())) {
-				foundSupers.add(c.getSuperclass().getName());
-				inspectSuper(obj, c.getSuperclass());
-				out.println("<< Resuming inspection of " + obj.getClass().getName() + " >>");
-				out.println();
-			} else {
-				out.println("<< Superclass \"" + c.getSuperclass().getName() + "\" has already been inspected. >>" );
-				out.println();
-			}
-		}	
-		else {
-			out.printf(format, SUPER, NONE);
-		}
-		
-		Class[] inters = c.getInterfaces();
-		if(inters.length==0) {
-			for(Class i : inters) {
-				
-			}
-		} else {
-			out.printf(format, INTER, NONE);
-			out.println();
-		}
-		
-		Field[] fields = c.getDeclaredFields();
-		if(fields.length!=0) {
-			for (Field f : fields) {
-				f.setAccessible(true);
-				printField(obj, f);
-			}
-		} else {
-			out.printf(format, FIELD, NONE);
-			out.println();
-		}
-		
-		Constructor[] constructors = c.getDeclaredConstructors();
-		for(Constructor con : constructors) {
-			printConstructor(con);
-		}
-
+	private void divider() {
 		out.println("***********************");
 	}
 
-	private void inspectSuper(Object o, Class c) {
-		out.println("<< Discovered new superclass \"" + c.getName() +  "\". Inspecting... >>");
+	private void inspectClass(Object o, Class c) {
 		out.println();
-		out.println("***********************");
-		
+		out.println("<< Beginning inspection of class \"" + c.getName() + "\" >>");
+		divider();
 		printClass(c, false);
-
+		
 		if(c.getSuperclass()!=null) {
+			printClass(c.getSuperclass(),true);
 			if(!foundSupers.contains(c.getSuperclass().getName())) {
+				
 				foundSupers.add(c.getSuperclass().getName());
-				inspectSuper(o, c.getSuperclass());
+				out.println("<< Discovered new superclass \"" + c.getSuperclass().getName() + "\". Inspecting... >>");
+
+				inspectClass(o, c.getSuperclass());
+				
+				out.println("<< Inspection of superclass \"" + c.getSuperclass().getName() + "\" complete >>");
 				out.println("<< Resuming inspection of " + c.getName() + " >>");
 				out.println();
 			} else {
@@ -90,17 +50,17 @@ public class Inspector {
 			}
 		}	
 		else {
-			out.printf(format, SUPER, NONE);
+			out.printf(format, "SUPERCLASS", NONE);
 			out.println();
 		}
-		
+
 		Class[] inters = c.getInterfaces();
 		if(inters.length==0) {
 			for(Class i : inters) {
 				
 			}
 		} else {
-			out.printf(format, INTER, NONE);
+			out.printf(format, "INTERFACE", NONE);
 			out.println();
 		}
 		
@@ -111,7 +71,7 @@ public class Inspector {
 				printField(o, f);
 			}
 		} else {
-			out.printf(format, FIELD, NONE);
+			out.printf(format, "FIELD", NONE);
 			out.println();
 		}
 		
@@ -120,24 +80,79 @@ public class Inspector {
 			printConstructor(con);
 		}
 		
-		out.println("***********************");
+		Method[] methods = c.getDeclaredMethods();
+		for (Method m : methods) {
+			printMethod(m);
+		}
+		
+		divider();
+		out.println("<< Completed inspection of class \"" + c.getName() + "\" >>");
 		out.println();
-		out.println("<< Inspection of superclass \"" + c.getName() + "\" complete >>");
 	}
 	
 	private void printClass(Class c, boolean supercl) {
 		if(supercl)
-			out.printf(format, SUPER, c.getName());
+			out.printf(format, "SUPERCLASS", c.getName());
 		else
-			out.printf(format, CLASS, c.getName());
+			out.printf(format, "CLASS", c.getName());
 		out.println();
 	}
 	
 	private void printConstructor(Constructor con) {
-		out.printf(format, CON, con);
+		out.printf(format, "CONSTRUCTOR", con);
 		out.println();	
 	}
 	
+	private void inspectArray(Field f, Object array) {
+		out.println("<< Inspecting array \"" + array.getClass().getName() + "\" >>");
+		divider();
+		if(f!=null) {
+			out.printf(format, "ARRAY NAME", f.getName());
+		} else {
+			out.printf(format, "ARRAY NAME", array.getClass().getName());
+		}
+		int len = Array.getLength(array);
+		out.printf(format, "ARRAY LENGTH", len);
+		out.printf(format, "COMPONENT TYPE", array.getClass().getComponentType());
+		out.println("ARRAY CONTENTS:");
+		
+		if(len!=0) {
+			String contents = "";
+			for(int i=0; i<len;++i) {
+				Object item = Array.get(array, i);
+				
+				if(item==null) {
+					contents += "[null] ";
+				} else {
+					contents += "[" + item + "] ";
+				}
+			}
+			out.println(contents);
+			
+			// go through contents again to recurse into objects
+			for(int i=0; i<len;++i) {
+				Object item = Array.get(array, i);
+
+				if(item==null) {
+					// do nothing
+				} else if(item.getClass().isArray()) {
+					inspectArray(null,item);
+				} else if(!array.getClass().getComponentType().isPrimitive() && rec) {
+					inspect(item,rec);
+				}
+			}
+		} else {
+			out.println("Array is empty.");
+		}
+		divider();
+		out.println("<< Inspection of array \"" + array.getClass().getName() + "\" complete >>");
+		out.println();
+	}
+	
+	private void printFieldInfo(String field, String value) {
+		out.printf(format,  "FIELD", field);
+		out.printf(format, "value", value);
+	}
 	private void printField(Object o, Field f) {
 		Object val;
 		String field = f + "";
@@ -150,26 +165,22 @@ public class Inspector {
 			}
 			else if(f.getType().isPrimitive()) {
 				value += val;
-				out.printf(format,  FIELD, field);
-				out.printf(format, "value", value);
+				printFieldInfo(field, value);
 				out.println();
-			} else if(val.getClass().isArray()){
+			} else if(f.getType().isArray()){
 				value += val.getClass() + " (hash:" + val.hashCode() + ")";
-				// traverse array
-				out.printf(format,  FIELD, field);
-				out.printf(format, "value", value);
+				printFieldInfo(field, value);
+				inspectArray(f, val);
 				out.println();
 			} else {
 				value += val.getClass() + " (hash:" + val.hashCode() + ")";
-				out.printf(format,  FIELD, field);
-				out.printf(format, "value", value);
+				printFieldInfo(field, value);
 				out.println();
 				if(rec) {
 					out.println("<< Discovered object \"" + f.getName() + "\", recursing... >>");
-					out.println();
 					inspect(val,rec);
-					out.println("<< Recursion into \"" + f.getName() + "\" complete >>\n\n"
-							+ "<< Resuming inspection of " + o.getClass().getName() + " >>\n");	
+					out.println("<< Recursion into \"" + f.getName() + "\" complete >>");
+					out.println();
 				}			
 			}
 			
@@ -179,6 +190,13 @@ public class Inspector {
 			e.printStackTrace();
 		} 
 	}
+	
+	private void printMethod(Method m) {
+		out.printf(format, "METHOD", m);
+		out.println();
+		
+	}
+
 	
 	private String determineModifier(int m) {
 		String mod = "";
