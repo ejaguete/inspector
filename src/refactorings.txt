@@ -1,0 +1,20 @@
+Refactorings:
+v1.1 - extracted repeated code inside inspect() to new method, printLines()
+v1.4 - extracted long code to traverse hierarchy to new method inspectHierarchy()
+v1.5 - moved long code to print out information to new method printInfo()
+v1.5 - removed redundant inspectHierarchy()
+v1.7 - moved code to print field arrays to printArray()
+     - created 2 signatures: printArray(field, object), printArray(object)
+     - extracted code to print out array contents into returnArray()
+v1.8 - moved long code to print fields to new method printFields()
+     - extracted similar code to print array inside inspect(), called printArray()
+v2.0 - re-did entire code because it was getting too messy
+     - introduced constants for easier print formatting
+     - printField(Field) takes one field at a time
+     - extracted code for printing class from inspect() to printClass() for cleaner code
+v2.1 - extracted code for printing superclass to inspectSuper()
+v2.2 - removed duplicate code in inspect() and inspectSuper(), inspectSuper() is now inspectClass()
+     - extracted duplicate code to print field info from printField to printFieldInfo()
+     - removed constants used for formatting due to only minimal use (only 1-2 times)
+     - extracted code that printed divider into divider()
+v2.3 - removed determineModifier(), an unused method in the program
